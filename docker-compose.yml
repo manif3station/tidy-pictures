@@ -1,0 +1,9 @@
+version: '3.7'
+services:
+    app:
+        build: .
+        volumes:
+          - $HOME/Pictures/samples:/pictures
+          - ./:/app
+        working_dir: /pictures
+        command: perl /app/tidy.pl
