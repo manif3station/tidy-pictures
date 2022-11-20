@@ -36,7 +36,7 @@ sub main {
     my ( $from, $to ) = @ARGV;
 
     $from //= '.';
-    $to   //= '.';
+    $to   //= $from;
 
     die "From where?" if !-d $from;
     die "To where?"   if !-d $to;
