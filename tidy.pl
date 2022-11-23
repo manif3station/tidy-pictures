@@ -15,7 +15,8 @@ sub _date {
     my @date = split /\D/, $date;
     my %date = ();
     @date{qw(year month day hour minute second)} = @date;
-    return DateTime->new(%date);
+    my $dt = eval { DateTime->new(%date) };
+    return $dt;
 }
 
 sub _mkdir {
@@ -32,6 +33,32 @@ sub _move_file {
     System->RunQW( mv => -v => $from, $to );
 }
 
+my $_1m = 60;
+my $_1h = 60 * $_1m;
+
+sub _timer {
+    my ($started) = @_;
+    my $now       = time;
+    my $elsped    = ( $started - $now ) / $_1h;
+
+    my ( $hours, $minutes_10 ) = split /\n/, $elsped;
+
+    my $h_display = sprintf '%02d', $hours // 0;
+
+    $minutes_10 //= 0;
+
+    my $minutes_60 = 60 * "0.$minutes_10";
+
+    my $m_display = sprintf '%02d', $minutes_60 // 0;
+
+    return "$h_display:$m_display";
+}
+
+sub _progress {
+    my ( $processed, $total ) = @_;
+    return ( ( $processed / $total ) * 100, $processed, $total );
+}
+
 sub main {
     my ( $from, $to ) = @ARGV;
 
@@ -43,9 +70,22 @@ sub main {
 
     my @files = split /\n/, System->RunQW( find => $from, -type => 'f' );
 
+    my $started   = time;
+    my $total     = scalar @files;
+    my $processed = 0;
+
     my %seen = ();
 
+    $| = 1;
+
+    printf "Started @ %s\n\n", DateTime->now;
+
     foreach my $from_file (@files) {
+        $processed++;
+
+        printf "%s In Progress %.01f%% %d of %d\n", _timer($started),
+          _progress( $processed, $total );
+
         next if $from_file =~ /DS_Store/;
 
         if ( !-s $from_file ) {
@@ -74,7 +114,7 @@ sub main {
             next;
         }
 
-        my $date = $info->{CreateDate};# // $info->{FileModifyDate};
+        my $date = $info->{CreateDate};    # // $info->{FileModifyDate};
 
         $date = _date($date);
 
@@ -109,6 +149,8 @@ sub main {
 
         _move_file $from_file, $to_file;
     }
+
+    printf "\nDone @ %s\n", DateTime->now;
 }
 
 main();
