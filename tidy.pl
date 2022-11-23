@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use lib '/app/lib';
+use FindBin '$Bin';
+use lib ('/app/lib', $Bin);
 
 use DateTime;
 use Digest::MD5;
