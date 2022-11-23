@@ -61,10 +61,8 @@ sub _progress {
 }
 
 sub main {
-    my ( $from, $to ) = @ARGV;
-
-    $from //= '.';
-    $to   //= $from;
+    my $from = '/mnt/d/Tidy';
+    my $to   = '/mnt/d/Tidy';
 
     die "From where?" if !-d $from;
     die "To where?"   if !-d $to;
