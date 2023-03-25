@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use FindBin '$Bin';
-use lib ('/app/lib', $Bin);
+use lib ( '/app/lib', $Bin );
 
 use DateTime;
 use Digest::MD5;
@@ -30,6 +30,27 @@ sub _move_file {
     my ( $from, $to ) = @_;
 
     next if $from eq $to;
+
+    if ( -d $to ) {
+        my ($filename) = ( $from =~ m {.*/(.*)} );
+        $to .= "/$1";
+    }
+
+    if ( -f $to ) {
+        my $num = 1;
+        my $_to;
+        do {
+            $_to = $to;
+            $num++;
+            if ( $_to =~ m/(.+)\.(.+)/ ) {
+                $_to = "$1 (Copy $num).$2";
+            }
+            else {
+                $_to .= " (Copy $num)";
+            }
+        } while ( -f $_to );
+        $to = $_to;
+    }
 
     System->RunQW( mv => -v => $from, $to );
 }
@@ -60,14 +81,18 @@ sub _progress {
     return ( ( $processed / $total ) * 100, $processed, $total );
 }
 
+sub _filename {
+    my ($path)     = @_;
+    my ($filename) = ( $path =~ m{.*/(.*)} );
+    return $filename;
+}
+
 sub main {
-    my $from = '/mnt/d/Tidy';
-    my $to   = '/mnt/d/Tidy';
+    my $from = $ENV{FROM_LOCATION} // '/pictures';
+    my $to   = $ENV{TO_LOCATION}   // '/pictures';
 
-    die "From where?" if !-d $from;
-    die "To where?"   if !-d $to;
-
-    my @files = split /\n/, System->RunQW( find => $from, -type => 'f' );
+    my @files = sort { _filename($a) cmp _filename($b) } split /\n/,
+        System->RunQW( find => $from, -type => 'f' );
 
     my $started   = time;
     my $total     = scalar @files;
@@ -79,13 +104,21 @@ sub main {
 
     printf "Started @ %s\n\n", DateTime->now;
 
-    foreach my $from_file (@files) {
+    FILE: foreach my $from_file (@files) {
+        my $rework_count = sub {
+            $total--;
+            $processed--;
+        };
+
         $processed++;
 
-        printf "%s In Progress %.01f%% %d of %d\n", _timer($started),
-          _progress( $processed, $total );
+        if ($from_file =~ /DS_Store/) {
+            $rework_count->();
+            next;
+        }
 
-        next if $from_file =~ /DS_Store/;
+        printf "%s In Progress %.01f%% %d of %d\n", _timer($started),
+            _progress( $processed, $total );
 
         if ( !-s $from_file ) {
             _move_file $from_file, _mkdir "$to/Empty-Files/";
@@ -97,7 +130,7 @@ sub main {
         my $mime = $info->{MIMEType} // '';
 
         if ( !%$info || $mime !~ m/(image|video)/ ) {
-            _move_file $from_file, _mkdir "$to/Non-A-Picture/";
+            _move_file $from_file, _mkdir "$to/Non-Picture/";
             next;
         }
 
@@ -108,12 +141,7 @@ sub main {
             $ctx->hexdigest;
         };
 
-        if ( $seen{$md5}++ ) {
-            _move_file $from_file, _mkdir "$to/Duplicated-Files/";
-            next;
-        }
-
-        my $date = $info->{CreateDate};    # // $info->{FileModifyDate};
+        my $date = $info->{CreateDate} // $info->{FileModifyDate};
 
         $date = _date($date);
 
@@ -122,7 +150,14 @@ sub main {
             next;
         }
 
-        my $dir = _mkdir sprintf "$to/%04d/%02d", $date->year, $date->month;
+        my $dir;
+
+        if ($seen{$md5}++) {
+            $dir = _mkdir "$to/Duplicated-Files";
+        }
+        else {
+            $dir = _mkdir sprintf "$to/%04d/%02d", $date->year, $date->month;
+        }
 
         $date =~ s/\D/-/g;
         $date =~ s/T/-/g;
@@ -148,6 +183,10 @@ sub main {
 
         _move_file $from_file, $to_file;
     }
+
+    map {
+        system sprintf "cd %s; find . -name .DS_Store -exec rm {} \\;; find . -empty -type d -delete", quotemeta;
+    } ( $from, $to );
 
     printf "\nDone @ %s\n", DateTime->now;
 }

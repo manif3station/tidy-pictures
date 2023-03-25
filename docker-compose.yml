@@ -1,9 +1,12 @@
 version: '3.7'
 services:
     app:
+        init: true
         build: .
         volumes:
-          - $HOME/Pictures/samples:/pictures
           - ./:/app
-        working_dir: /pictures
-        command: perl /app/tidy.pl
+        working_dir: /app
+        environment:
+          FROM_LOCATION: /app/test-from
+          TO_LOCATION: /app/test-to
+        command: sleep infinity
