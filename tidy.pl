@@ -87,7 +87,37 @@ sub _filename {
     return $filename;
 }
 
+sub _md5 {
+    my ($path) = @_;
+    open my $fh, '<', $path;
+    my $ctx = Digest::MD5->new;
+    $ctx->addfile($fh);
+    $ctx->hexdigest;
+}
+
+sub _check_update {
+    return if grep {/--skip-check-update/} @ARGV;
+
+    if ( !qx{which curl} ) {
+        system qw(apt update);
+        system qw(sudo apt install -y curl);
+    }
+
+    return if !qx{which curl};
+
+    system
+        "curl https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/tidy.pl > $0.new";
+
+    return if !-f "$0.new" || !-s "$0.new" || _md5("$0.new") eq _md5($0);
+
+    system mv => -v => "$0.new", $0;
+
+    exec perl => $0, '--skip-check-update';
+}
+
 sub main {
+    _check_update;
+
     my $from = $ENV{FROM_LOCATION} // '/pictures';
     my $to   = $ENV{TO_LOCATION}   // '/pictures';
 
@@ -108,10 +138,7 @@ sub main {
     printf "Indexing ...\n";
 
     FILE: foreach my $old_file(@old_files) {
-        open my $fh, '<', $old_file;
-        my $ctx = Digest::MD5->new;
-        $ctx->addfile($fh);
-        $seen{$ctx->hexdigest}++;
+        $seen{_md5 $old_file}++;
     }
 
     printf "[Done]\n\nStarted @ %s\n\n", DateTime->now;
@@ -146,12 +173,7 @@ sub main {
             next;
         }
 
-        my $md5 = do {
-            open my $fh, '<', $from_file;
-            my $ctx = Digest::MD5->new;
-            $ctx->addfile($fh);
-            $ctx->hexdigest;
-        };
+        my $md5 = _md5 $from_file;
 
         my $date = $info->{CreateDate} // $info->{FileModifyDate};
 
@@ -203,4 +225,4 @@ sub main {
     printf "\nDone @ %s\n", DateTime->now;
 }
 
-main();
+main
