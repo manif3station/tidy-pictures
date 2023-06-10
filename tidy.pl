@@ -94,6 +94,9 @@ sub main {
     my @files = sort { _filename($a) cmp _filename($b) } split /\n/,
         System->RunQW( find => $from, -type => 'f' );
 
+    my @old_files = sort { _filename($a) cmp _filename($b) } split /\n/,
+        System->RunQW( find => $to, -type => 'f' );
+
     my $started   = time;
     my $total     = scalar @files;
     my $processed = 0;
@@ -102,7 +105,16 @@ sub main {
 
     $| = 1;
 
-    printf "Started @ %s\n\n", DateTime->now;
+    printf "Indexing ...\n";
+
+    FILE: foreach my $old_file(@old_files) {
+        open my $fh, '<', $old_file;
+        my $ctx = Digest::MD5->new;
+        $ctx->addfile($fh);
+        $seen{$ctx->hexdigest}++;
+    }
+
+    printf "[Done]\n\nStarted @ %s\n\n", DateTime->now;
 
     FILE: foreach my $from_file (@files) {
         my $rework_count = sub {
