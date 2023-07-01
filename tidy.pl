@@ -55,27 +55,6 @@ sub _move_file {
     System->RunQW( mv => -v => $from, $to );
 }
 
-my $_1m = 60;
-my $_1h = 60 * $_1m;
-
-sub _timer {
-    my ($started) = @_;
-    my $now       = time;
-    my $elsped    = ( $started - $now ) / $_1h;
-
-    my ( $hours, $minutes_10 ) = split /\n/, $elsped;
-
-    my $h_display = sprintf '%02d', $hours // 0;
-
-    $minutes_10 //= 0;
-
-    my $minutes_60 = 60 * "0.$minutes_10";
-
-    my $m_display = sprintf '%02d', $minutes_60 // 0;
-
-    return "$h_display:$m_display";
-}
-
 sub _progress {
     my ( $processed, $total ) = @_;
     return ( ( $processed / $total ) * 100, $processed, $total );
@@ -93,6 +72,30 @@ sub _md5 {
     my $ctx = Digest::MD5->new;
     $ctx->addfile($fh);
     $ctx->hexdigest;
+}
+
+my %SEEN;
+
+sub _add_index {
+    my ($file, $index_dir) = @_;
+
+    _mkdir $index_dir;
+
+    if ( !-f $file ) {
+        die "Unexpected Error: File not found $file\n.";
+    }
+
+    my $md5 = $SEEN{$file} //= _md5 $file;
+
+    my $index = "$index_dir/$md5";
+
+    return "seen" if -f $index;
+
+    open my $fh, '>', $index;
+    print $fh time;
+    close $fh;
+
+    return "new";
 }
 
 sub _check_update {
@@ -118,78 +121,112 @@ sub _check_update {
 sub main {
     _check_update;
 
+    printf "\nStarted @ %s\n", DateTime->now;
+
     my $from = $ENV{FROM_LOCATION} // '/pictures';
     my $to   = $ENV{TO_LOCATION}   // '/pictures';
+    my $dup  = _mkdir "$to/Duplicated-Files";
+
+    my $index_dir = "$to/.seen-pictures";
+
+    my $normal_idx = "$index_dir/normal";
+    my $dup_idx    = "$index_dir/duplicated";
 
     my @files = sort { _filename($a) cmp _filename($b) } split /\n/,
         System->RunQW( find => $from, -type => 'f' );
 
     my @old_files = sort { _filename($a) cmp _filename($b) } split /\n/,
-        System->RunQW( find => $to, -type => 'f' );
+        System->RunQW( find => $to, -path => $dup, '-prune', -type => 'f' );
 
-    my $started   = time;
-    my $total     = scalar @files;
-    my $processed = 0;
+    my @dup_files = sort { _filename($a) cmp _filename($b) } split /\n/,
+        System->RunQW( find => $dup, -type => 'f');
 
-    my %seen = ();
+    my $total = scalar @files;
 
     $| = 1;
 
-    printf "Indexing ...\n";
-
-    FILE: foreach my $old_file(@old_files) {
-        $seen{_md5 $old_file}++;
+    if ( grep { /--reindex/ } @ARGV ) {
+        System->RunQW( rm => $index_dir );
     }
 
-    printf "[Done]\n\nStarted @ %s\n\n", DateTime->now;
+    if ( !-d $normal_idx || !-d $dup_idx ) {
 
-    FILE: foreach my $from_file (@files) {
-        my $rework_count = sub {
-            $total--;
-            $processed--;
-        };
+        my ($count, $total_files, $printed_init_label);
 
-        $processed++;
+        $total_files += @old_files if !-d $normal_idx;
+        $total_files += @dup_files if !-d $dup_idx;
 
-        if ($from_file =~ /DS_Store/) {
-            $rework_count->();
+        foreach my $row ( [ $normal_idx, \@old_files ],
+            [ $dup_idx, \@dup_files ] )
+        {
+            my ( $index, $files ) = @$row;
+
+            next if -d $index;
+
+            foreach my $file (@$files) {
+                printf "Indexing ...\n" if $printed_init_label++ == 1;;
+                printf "Indexed photos %d of %d\n", ++$count, $total_files;
+                _add_index $file, $index;
+            }
+
+        }
+
+        printf "\n%s\n", '-=' x 40 if $printed_init_label;
+    }
+
+    my $count;
+
+    foreach my $from_file (@files) {
+        print "\n";
+        printf "Sorting photo %d of %d ", ++$count, $total;
+
+        if ( $from_file =~ /DS_Store/ ) {
             next;
         }
 
-        printf "%s In Progress %.01f%% %d of %d\n", _timer($started),
-            _progress( $processed, $total );
-
         if ( !-s $from_file ) {
+            print "(empty file)";
             _move_file $from_file, _mkdir "$to/Empty-Files/";
             next;
         }
 
-        my $info = ImageInfo($from_file);
+        my $info = ImageInfo $from_file;
 
         my $mime = $info->{MIMEType} // '';
 
         if ( !%$info || $mime !~ m/(image|video)/ ) {
+            print "(non picture file)";
             _move_file $from_file, _mkdir "$to/Non-Picture/";
             next;
         }
-
-        my $md5 = _md5 $from_file;
 
         my $date = $info->{CreateDate} // $info->{FileModifyDate};
 
         $date = _date($date);
 
         if ( !$date ) {
+            print "(file has no date)";
             _move_file $from_file, _mkdir "$to/Files-Have-No-Date/";
             next;
         }
 
+        print "(Photo data: $date) ";
+
         my $dir;
 
-        if ($seen{$md5}++) {
-            $dir = _mkdir "$to/Duplicated-Files";
+        if ( _add_index($from_file, $normal_idx) eq 'seen' ) {
+            if ( _add_index($from_file, $dup_idx) eq 'seen' ) {
+                print "(seen this file before)";
+                System->RunQW( rm => $from_file );
+                next;
+            }
+            else {
+                print "(duplicated)";
+                $dir = $dup;
+            }
         }
         else {
+            print "New";
             $dir = _mkdir sprintf "$to/%04d/%02d", $date->year, $date->month;
         }
 
@@ -215,14 +252,17 @@ sub main {
             _move_file $first_file, $to_file;
         }
 
+        print " (Filename: $date.$ext)";
         _move_file $from_file, $to_file;
     }
 
     map {
-        system sprintf "cd %s; find . -name .DS_Store -exec rm {} \\;; find . -empty -type d -delete", quotemeta;
+        system sprintf
+            "cd %s; find . -name .DS_Store -exec rm {} \\;; find . -empty -type d -delete",
+            quotemeta;
     } ( $from, $to );
 
-    printf "\nDone @ %s\n", DateTime->now;
+    printf "\n\nDone @ %s\n", DateTime->now;
 }
 
 main
