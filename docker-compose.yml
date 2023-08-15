@@ -4,9 +4,10 @@ services:
         init: true
         build: .
         volumes:
-          - ./:/app
+          - /Users/mv/Pictures/Photos2022:/photos
+          - .:/app
         working_dir: /app
         environment:
-          FROM_LOCATION: /app/test-from
-          TO_LOCATION: /app/test-to
+          FROM_LOCATION: /photos/From
+          TO_LOCATION: /photos/TO
         command: sleep infinity

@@ -210,7 +210,7 @@ sub main {
             next;
         }
 
-        print "(Photo data: $date) ";
+        print "(Photo date: $date) ";
 
         my $dir;
 
