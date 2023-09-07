@@ -64,3 +64,9 @@ func JoinStrs(code func() (string, []string)) string {
 	seperator, value := code()
 	return strings.Join(value, seperator)
 }
+
+func CheckErr(e error) {
+	if e != nil {
+		panic(e)
+	}
+}

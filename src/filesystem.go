@@ -46,9 +46,8 @@ func Dir_exists(dir string) bool {
 func Mkdir(dir string) string {
 	if !Dir_exists(dir) {
 		err := os.MkdirAll(dir, os.ModePerm)
-		if err != nil {
-			log.Fatal(err)
-		}
+
+		CheckErr(err)
 	}
 	return dir
 }
@@ -64,9 +63,7 @@ func MoveFile(from, to string) {
 
 	err := os.Rename(from, to)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	CheckErr(err)
 }
 
 func Find(dir string) []string {
@@ -93,6 +90,9 @@ func Find_and_exclude(inc_dir, exc_dir string) []string {
 			return nil
 		}
 		if match, _ := regexp.MatchString("^"+exc_dir, path); match {
+			return nil
+		}
+		if match, _ := regexp.MatchString("DS_Store", path); match {
 			return nil
 		}
 		files = append(files, path)
@@ -123,12 +123,14 @@ func RemoveEmptyDirectories(rootDir string) {
 
 func IsDirectoryEmpty(path string) (bool, error) {
 	dir, err := os.Open(path)
+
 	if err != nil {
 		return false, err
 	}
 	defer dir.Close()
 
 	_, err = dir.Readdirnames(1) // Try to read one entry.
+
 	if err == nil {
 		// Directory is not empty.
 		return false, nil
@@ -146,6 +148,7 @@ func IsDirectoryEmpty(path string) (bool, error) {
 func RemoveHiddenFilesInDir(dirPath string) {
 	// Walk through the directory and its subdirectories
 	_ = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+
 		if err != nil {
 			return err
 		}

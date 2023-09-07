@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
 )
@@ -17,9 +16,7 @@ func _check_update() {
 
 	err := os.Rename(me, new_file)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	CheckErr(err)
 
 	exec.Command(me, "--skip-check-update").Run()
 

@@ -4,24 +4,21 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
 func MD5(file string) string {
 	f, err := os.Open(file)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	CheckErr(err)
 
 	defer f.Close()
 
 	h := md5.New()
 
-	if _, err := io.Copy(h, f); err != nil {
-		log.Fatal(err)
-	}
+	_, err = io.Copy(h, f)
+
+	CheckErr(err)
 
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

@@ -30,6 +30,7 @@ func main() {
 
 	from := Defor(os.Getenv("FROM_LOCATION"), "/pictures")
 	to := Defor(os.Getenv("TO_LOCATION"), "/pictures")
+
 	dup := Mkdir(to + "/Duplicated-Files")
 
 	index_dir := to + "/.seen-pictures"
@@ -114,11 +115,11 @@ func main() {
 			"MIMEType",
 		}
 
-		info := Exif("test.jpg", fields)
+		info := Exif(from_file, fields)
 
 		mime := Defor(info["MIMEType"].StringValue(), "")
 
-		if match, _ := regexp.MatchString("(image|video)", mime); match {
+		if match, _ := regexp.MatchString("(image|video)", mime); !match {
 			fmt.Print("(non picture file)")
 			MoveFile(from_file, Mkdir(to+"/Non-Picture"))
 			continue
@@ -130,6 +131,9 @@ func main() {
 			match, _ := regexp.MatchString("Date", field)
 			if match && info[field].StringValue() != "" {
 				date = info[field]
+			}
+			if date.StringValue() != "" {
+				break
 			}
 		}
 
@@ -211,6 +215,10 @@ func _add_index(file, index_dir string) string {
 
 	if !File_exists(file) {
 		log.Fatal("Unexpected Error: File not found " + file)
+	}
+
+	if SEEN == nil {
+		SEEN = make(map[string]string)
 	}
 
 	md5 := SEEN[file]

@@ -1,12 +1,19 @@
 package main
 
 import (
+	"embed"
 	"log"
+	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/barasher/go-exiftool"
 )
+
+//go:embed exiftool-12.65.exe
+var embedfs embed.FS
 
 type ExifMetaValue struct {
 	value string
@@ -30,7 +37,7 @@ func (self ExifMetaValue) DateTimeStringValueCustomSeparator(date_sep, time_sep 
 	}
 
 	date_str := strings.Join(date_arr, date_sep)
-	time_str = strings.ReplaceAll(time_str, ":", date_sep)
+	time_str = strings.ReplaceAll(time_str, ":", time_sep)
 
 	return date_str, time_str
 }
@@ -58,15 +65,15 @@ func (self ExifMetaValue) DateTimeValue() time.Time {
 }
 
 func Exif(file string, fields []string) map[string]ExifMetaValue {
-	et, err := exiftool.NewExiftool()
+	exiftool_exe := exiftool.SetExiftoolBinaryPath(FindExiftool())
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	et, err := exiftool.NewExiftool(exiftool_exe)
+
+	CheckErr(err)
 
 	defer et.Close()
 
-	meta := et.ExtractMetadata("test.jpg")[0]
+	meta := et.ExtractMetadata(file)[0]
 
 	lookup := map[string]ExifMetaValue{}
 
@@ -76,4 +83,44 @@ func Exif(file string, fields []string) map[string]ExifMetaValue {
 	}
 
 	return lookup
+}
+
+func FindExiftool() string {
+	os_name := runtime.GOOS
+
+	var path string
+
+	switch os_name {
+	case "window":
+		path = `c:\Windowns\exiftool.exe`
+	case "darwin":
+		path = "/opt/homebrew/bin/exiftool"
+	case "linux":
+		path = "/usr/bin/exiftool"
+	default:
+		log.Fatal("Unsupported OS: " + os_name)
+	}
+
+	if File_exists(path) {
+		return path
+	}
+
+	switch os_name {
+	case "window":
+		raw, err := embedfs.ReadFile("exiftool-12.65.exe")
+		CheckErr(err)
+		fh, err := os.Create(path)
+		CheckErr(err)
+		fh.WriteString(string(raw))
+		fh.Close()
+	case "darwin":
+		cmd := exec.Command("brew", "install", "exiftool")
+		_, err := cmd.Output()
+		CheckErr(err)
+	case "linux":
+		_, _ = exec.Command("apt", "update").Output()
+		_, _ = exec.Command("apt", "install", "-y", "exiftool").Output()
+	}
+
+	return path
 }
