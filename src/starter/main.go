@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"syscall"
 
 	"michaelpc.com/shared_lib"
 )
@@ -53,7 +52,11 @@ func main() {
 
 	fmt.Println(">>", cmd)
 
-	err := syscall.Exec(cmd.Path, cmd.Args, os.Environ())
+	err := cmd.Start()
+
+	shared_lib.CheckErr(err)
+
+	err = cmd.Wait()
 
 	shared_lib.CheckErr(err)
 }
