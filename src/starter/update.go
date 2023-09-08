@@ -18,7 +18,7 @@ func _check_update(pwd, name string) {
 
 	defer os.Remove(new_file)
 
-	if shared_lib.MD5(new_file) == shared_lib.MD5(me) {
+	if shared_lib.File_exists(me) && shared_lib.MD5(new_file) == shared_lib.MD5(me) {
 		return
 	}
 
