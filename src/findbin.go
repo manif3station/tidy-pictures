@@ -11,6 +11,6 @@ func RealBin() string {
 }
 
 func Me() string {
-	path, _ := os.Executable()
+	path := os.Args[0]
 	return path
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -56,9 +57,15 @@ func MoveFile(from, to string) {
 	if !File_exists(from) {
 		log.Fatal("File: " + from + " does not exists")
 	}
+
 	if Dir_exists(to) {
-		parts := strings.Split(from, "/")
-		to += "/" + parts[len(parts)-1]
+		if runtime.GOOS == "windows" {
+			parts := strings.Split(from, "\\")
+			to += "\\" + parts[len(parts)-1]
+		} else {
+			parts := strings.Split(from, "/")
+			to += "/" + parts[len(parts)-1]
+		}
 	}
 
 	err := os.Rename(from, to)

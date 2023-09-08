@@ -3,22 +3,35 @@ package main
 import (
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 func _check_update() {
 	me := Me()
 
-	new_file := Download("https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/tidy.exe", me+".new")
+	var name string
 
-	if new_file == "" || MD5(new_file) == MD5(me) {
+	switch runtime.GOOS {
+	case "windows":
+		name = "tidy.exe"
+	default:
+		name = "tidy"
+	}
+
+	new_file := Download("https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/"+name, me+".new")
+
+	if new_file == "" {
 		return
 	}
 
-	err := os.Rename(me, new_file)
+	if MD5(new_file) == MD5(me) {
+		os.Remove(new_file)
+		return
+	}
 
-	CheckErr(err)
+	MoveFile(new_file, me)
 
-	exec.Command(me, "--skip-check-update").Run()
+	_ = exec.Command(me, "--skip-check-update").Start()
 
 	os.Exit(0)
 }

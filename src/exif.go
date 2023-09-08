@@ -91,8 +91,8 @@ func FindExiftool() string {
 	var path string
 
 	switch os_name {
-	case "window":
-		path = `c:\Windowns\exiftool.exe`
+	case "windows":
+		path = `d:\exiftool.exe`
 	case "darwin":
 		path = "/opt/homebrew/bin/exiftool"
 	case "linux":
@@ -106,7 +106,7 @@ func FindExiftool() string {
 	}
 
 	switch os_name {
-	case "window":
+	case "windows":
 		raw, err := embedfs.ReadFile("exiftool-12.65.exe")
 		CheckErr(err)
 		fh, err := os.Create(path)

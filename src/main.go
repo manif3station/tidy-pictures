@@ -19,7 +19,21 @@ var SEEN map[string]string
 func main() {
 	skip_update := flag.Bool("skip-check-update", false, "Skip to check for update")
 	reindex := flag.Bool("reindex", false, "Reindex")
+	from_dir := flag.String("from", os.Getenv("FROM_LOCATION"), "From Directory")
+	to_dir := flag.String("to", os.Getenv("TO_LOCATION"), "To Directory")
 	flag.Parse()
+
+	from := *from_dir
+
+	if from == "" || !Dir_exists(from) {
+		log.Fatal("From directory is invalid. Path: " + from)
+	}
+
+	to := *to_dir
+
+	if to == "" || !Dir_exists(to) {
+		log.Fatal("To directory is invalid. Path: " + to)
+	}
 
 	if !*skip_update {
 		_check_update()
@@ -27,9 +41,6 @@ func main() {
 
 	fmt.Printf("\nStarted @ %v\n", Now())
 	fmt.Println("------------------------")
-
-	from := Defor(os.Getenv("FROM_LOCATION"), "/pictures")
-	to := Defor(os.Getenv("TO_LOCATION"), "/pictures")
 
 	dup := Mkdir(to + "/Duplicated-Files")
 
