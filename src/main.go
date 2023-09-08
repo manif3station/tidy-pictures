@@ -17,11 +17,32 @@ type idx_files struct {
 var SEEN map[string]string
 
 func main() {
+	orig_args := flag.String("args", "", "This parameter is meant to be used during update")
 	skip_update := flag.Bool("skip-check-update", false, "Skip to check for update")
+	apply_update := flag.Bool("apply-update", false, "Skip to check for update")
+	update_from := flag.String("update-from", "", "New Update Binary")
+	update_to := flag.String("update-to", "", "Old Binary")
+	cleanup_update_patch := flag.String("cleanup-update", "", "After Update Cleanup")
+
 	reindex := flag.Bool("reindex", false, "Reindex")
 	from_dir := flag.String("from", os.Getenv("FROM_LOCATION"), "From Directory")
 	to_dir := flag.String("to", os.Getenv("TO_LOCATION"), "To Directory")
 	flag.Parse()
+
+	if *cleanup_update_patch != "" {
+		fmt.Println("Cleanup Update")
+		os.Remove(*cleanup_update_patch)
+	} else if *apply_update {
+		fmt.Println("Apply Update")
+		_apply_update(*update_from, *update_to, *orig_args)
+	} else if !*skip_update {
+		fmt.Println("Update Started")
+		_check_update()
+	}
+
+	fmt.Println("Normal Operation")
+
+	os.Exit(0)
 
 	from := *from_dir
 
@@ -33,10 +54,6 @@ func main() {
 
 	if to == "" || !Dir_exists(to) {
 		log.Fatal("To directory is invalid. Path: " + to)
-	}
-
-	if !*skip_update {
-		_check_update()
 	}
 
 	fmt.Printf("\nStarted @ %v\n", Now())

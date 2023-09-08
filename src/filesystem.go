@@ -73,6 +73,28 @@ func MoveFile(from, to string) {
 	CheckErr(err)
 }
 
+func CopyFile(from, to string, perm os.FileMode) {
+	if !File_exists(from) {
+		log.Fatal("File: " + from + " does not exists")
+	}
+
+	if Dir_exists(to) {
+		if runtime.GOOS == "windows" {
+			parts := strings.Split(from, "\\")
+			to += "\\" + parts[len(parts)-1]
+		} else {
+			parts := strings.Split(from, "/")
+			to += "/" + parts[len(parts)-1]
+		}
+	}
+
+	data, err := os.ReadFile(from)
+	CheckErr(err)
+
+	err = os.WriteFile(to, data, perm)
+	CheckErr(err)
+}
+
 func Find(dir string) []string {
 	var files []string
 
