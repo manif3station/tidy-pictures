@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"syscall"
 )
 
 func _check_update() {
@@ -33,7 +34,7 @@ func _check_update() {
 
 	cmd := exec.Command(new_file, "--apply-update", "--update-from", new_file, "--update-to", me, "--args", strings.Join(os.Args, "||"))
 	fmt.Println(">> ", cmd)
-	err := cmd.Start()
+	err := syscall.Exec(cmd.Path, cmd.Args, os.Environ())
 	CheckErr(err)
 	os.Exit(0)
 }
@@ -44,7 +45,7 @@ func _apply_update(new_update, old_file, orig_args string) {
 	args = append(args, "--cleanup-update", new_update)
 	cmd := exec.Command(old_file, args...)
 	fmt.Println(">> ", cmd)
-	err := cmd.Start()
+	err := syscall.Exec(cmd.Path, cmd.Args, os.Environ())
 	CheckErr(err)
 	os.Exit(0)
 }

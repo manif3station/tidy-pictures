@@ -40,7 +40,7 @@ func main() {
 		_check_update()
 	}
 
-	fmt.Println("Normal Operation")
+	fmt.Println("Normal Operation.")
 
 	os.Exit(0)
 
