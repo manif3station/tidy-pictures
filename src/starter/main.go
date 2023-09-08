@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	skip_update := flag.Bool("skip-check-update", false, "Skip to check for update")
+	skip_update := flag.Bool("no-update", false, "Skip to check for update")
 
 	reindex := flag.Bool("reindex", false, "Reindex")
 	from_dir := flag.String("from", os.Getenv("FROM_LOCATION"), "From Directory")
