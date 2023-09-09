@@ -4,7 +4,7 @@ import (
 	"os"
 	"runtime"
 
-	"michaelpc.com/shared_lib"
+	"github.com/manif3station/shared_lib"
 )
 
 func _check_update(pwd, name string) {

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/barasher/go-exiftool"
-	"michaelpc.com/shared_lib"
+	"github.com/manif3station/shared_lib"
 )
 
 //go:embed exiftool-12.65.exe

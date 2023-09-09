@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/manif3station/shared_lib"
 	"michaelpc.com/exif"
-	"michaelpc.com/shared_lib"
 )
 
 type idx_files struct {
