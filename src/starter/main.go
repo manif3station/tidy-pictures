@@ -26,6 +26,10 @@ func main() {
 	switch runtime.GOOS {
 	case "windows":
 		name = "_tidy.exe"
+	case "darwin":
+		name = "_tidy.mac"
+	case "linux":
+		name = "_tidy.linux"
 	default:
 		name = "_tidy"
 	}
