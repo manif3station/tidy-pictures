@@ -10,7 +10,7 @@ import (
 func _check_update(pwd, name string) {
 	me := pwd + "/" + name
 
-	new_file := shared_lib.Download("https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/"+name, pwd+"/new."+name)
+	new_file := shared_lib.Download("https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/bin/"+name, pwd+"/new."+name)
 
 	if new_file == "" {
 		return

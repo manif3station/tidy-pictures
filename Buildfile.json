@@ -3,12 +3,12 @@
       {
          "name" : "tidy",
          "base_dir": "src/starter",
-         "build_dir" : "../.."
+         "build_dir" : "../../bin"
       },
       {
          "name" : "_tidy",
          "base_dir": "src/main",
-         "build_dir" : "../.."
+         "build_dir" : "../../bin"
       }
    ]
 }
