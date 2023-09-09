@@ -4,11 +4,12 @@ services:
         init: true
         build: Dockerfiles/go
         volumes:
-          - $HOME/Pictures/Photos2022:/photos
+          - $HOME/Desktop/Photos2022:/photos
           - $HOME/.vim:/root/.vim
           - $HOME/.vimrc:/root/.vimrc
+          - $HOME/web/lab/go-build/go-build-linux-arm64:/usr/local/bin/go-build
           - ./:/app
-        working_dir: /app/src
+        working_dir: /app
         environment:
           FROM_LOCATION: /photos/From
           TO_LOCATION: /photos/TO

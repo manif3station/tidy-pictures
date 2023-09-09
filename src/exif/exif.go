@@ -2,6 +2,7 @@ package exif
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -20,8 +21,12 @@ type ExifMetaValue struct {
 	value string
 }
 
+func (self ExifMetaValue) IsEmpty() bool {
+	return self.StringValue() == ""
+}
+
 func (self ExifMetaValue) StringValue() string {
-	return self.value
+	return fmt.Sprintf("%s", self.value)
 }
 
 func (self ExifMetaValue) DateTimeStringValue() (string, string) {
@@ -29,7 +34,7 @@ func (self ExifMetaValue) DateTimeStringValue() (string, string) {
 }
 
 func (self ExifMetaValue) DateTimeStringValueCustomSeparator(date_sep, time_sep string) (string, string) {
-	datetime := strings.Split(self.value, " ")
+	datetime := strings.Split(self.StringValue(), " ")
 
 	date_arr, time_str := strings.Split(datetime[0], ":"), "00:00:00"
 
@@ -65,7 +70,7 @@ func (self ExifMetaValue) DateTimeValue() time.Time {
 	return dt
 }
 
-func Exif(file string, fields []string) map[string]ExifMetaValue {
+func Exif(file string, fields map[string]bool) map[string]ExifMetaValue {
 	exiftool_exe := exiftool.SetExiftoolBinaryPath(FindExiftool())
 
 	et, err := exiftool.NewExiftool(exiftool_exe)
@@ -78,9 +83,12 @@ func Exif(file string, fields []string) map[string]ExifMetaValue {
 
 	lookup := map[string]ExifMetaValue{}
 
-	for _, field := range fields {
-		v, _ := meta.GetString(field)
-		lookup[field] = ExifMetaValue{value: v}
+	for field, _ := range meta.Fields {
+		if strings.Contains(field, "Date") || fields[field] {
+			value, err := meta.GetString(field)
+			shared_lib.CheckErr(err)
+			lookup[field] = ExifMetaValue{value: value}
+		}
 	}
 
 	return lookup

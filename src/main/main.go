@@ -113,15 +113,15 @@ func main() {
 			continue
 		}
 
-		fields := []string{
-			"DigitalCreationDateTime",
-			"DateTimeCreated",
-			"CreateDate",
-			"DateTimeOriginal",
-			"DateCreated",
-			"DigitalCreationDate",
-			"FileTypeExtension",
-			"MIMEType",
+		fields := map[string]bool{
+			"DigitalCreationDateTime": true,
+			"DateTimeCreated":         true,
+			"CreateDate":              true,
+			"DateTimeOriginal":        true,
+			"DateCreated":             true,
+			"DigitalCreationDate":     true,
+			"FileTypeExtension":       true,
+			"MIMEType":                true,
 		}
 
 		info := exif.Exif(from_file, fields)
@@ -136,13 +136,11 @@ func main() {
 
 		var date exif.ExifMetaValue
 
-		for _, field := range fields {
-			match, _ := regexp.MatchString("Date", field)
-			if match && info[field].StringValue() != "" {
-				date = info[field]
-			}
-			if date.StringValue() != "" {
-				break
+		for field, _ := range fields {
+			if match, _ := regexp.MatchString("Date", field); match && info[field].StringValue() != "" {
+				if date.IsEmpty() || info[field].StringValue() > date.StringValue() {
+					date = info[field]
+				}
 			}
 		}
 
