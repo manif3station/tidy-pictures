@@ -109,7 +109,7 @@ sub _check_update {
     return if !qx{which curl};
 
     system
-        "curl https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/tidy.pl > $0.new";
+        "curl https://raw.githubusercontent.com/manif3station/tidy-pictures/stable/bin/tidy.pl > $0.new";
 
     return if !-f "$0.new" || !-s "$0.new" || _md5("$0.new") eq _md5($0);
 
@@ -265,4 +265,4 @@ sub main {
     printf "\n\nDone @ %s\n", DateTime->now;
 }
 
-main
+caller or main
